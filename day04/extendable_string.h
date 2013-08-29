@@ -8,6 +8,7 @@ typedef struct extendable_string extendable_string_t;
 int extendable_string_create(extendable_string_t *str_struct); // constructor;
 int extendable_string_size_create(extendable_string_t *str_struct, unsigned long long new_size); // constructor 1;
 void extendable_string_delete(extendable_string_t *str_struct); //destructor;
+void extended_string_delete_partly(extendable_string_t *str_struct, long long index, long long end);
 
 int extendable_string_add_string(extendable_string_t *str_struct, const char *string);
 const char *extendable_string_get_string(extendable_string_t *str_struct);

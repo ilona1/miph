@@ -16,6 +16,12 @@
 
 static int shared_fd;
 
+static char send_buffer[2][1024];
+static char receive_buffer[1024];
+static pthread_mutex_t send_buffer_access;
+static pthread_cond_t send_buffer_0_cv;
+static pthread_cond_t send_buffer_1_cv;
+
 static pthread_mutex_t connection_access;
 static pthread_cond_t connection_access_cv;
 static pthread_cond_t dispatch_cv;
@@ -94,7 +100,7 @@ void *workerThreadRoutine(void *threadid)
 		shared_fd = 0;
 		pthread_cond_signal(&dispatch_cv);
 		pthread_mutex_unlock(&connection_access);
-	
+
 		do{
 			if (ready_to_send){
 				snprintf(send_buffer, sizeof(send_buffer), "Server waiting messages\n");
@@ -112,18 +118,56 @@ void *workerThreadRoutine(void *threadid)
 		
 		close(conn_fd);
 	}
-	
 }
+
+void *inputThreadRoutine(void *threadid)
+{
+	int tid = *((int*)(threadid));
+	unsigned char c;
+	unsigned long index = 0;
+	synch_printf("%d ok\n", tid);
+	do{
+		c = getchar();
+		if ((c == 8) && (index>0)){
+			index--;
+			send_buffer[1][index] = 0;
+		}
+		send_buffer[1][index] = c;
+		if (index<sizeof(send_buffer[1])){
+			index++;
+		}
+		
+		if( c == '\n'){
+			int len;
+			send_buffer[1][index] = 0;
+			pthread_mutex_lock(&send_buffer_access);
+			len = strlen(send_buffer[1]);
+			synch_printf("\nbuffer:\n%s\nsize\n%d\n",send_buffer[1], len);
+			memcpy(&(send_buffer[0]), &(send_buffer[1]), len+1);
+			memset(&(send_buffer[1]), 0, len);
+			pthread_cond_signal(&send_buffer_0_cv);
+			printf("Signalled to write. Input thread falling asleep\n");
+			pthread_cond_wait(&send_buffer_1_cv, &send_buffer_access);
+			pthread_mutex_unlock(&send_buffer_access);
+			
+			index = 0;
+		}
+	}while(1);
+	pthread_exit(NULL);
+}
+
+//void *inputThreadRoutine(void *threadid)
 
 int main(int argc, char *argv[])
 {
-    int socket_fd = 0, conn_fd = 0;
+  int socket_fd = 0, conn_fd = 0;
 	int i;
-	int *tid;
-	pthread_t worker_threads[WORKER_THREAD_NUM];
-    
+  int *tid;
+  pthread_t worker_threads[WORKER_THREAD_NUM];
+  pthread_t input_thread;
+  pthread_t send_thread;
 
-    socket_fd = open_server_socket(5000);
+  socket_fd = open_server_socket(5000);
 	printf("socket opened\n");
 	
 	listen(socket_fd, 10); 
@@ -145,8 +189,22 @@ int main(int argc, char *argv[])
 		pthread_create(&worker_threads, NULL, workerThreadRoutine, (void*)(tid));
 		i++;
 	}
-	
-	synch_printf("Init complete! =)\n");
+  
+  tid = (int *)malloc(sizeof(int));
+	if (!tid){
+		return 1;
+	}
+	*tid = WORKER_THREAD_NUM + 1;
+	pthread_create(&input_thread, NULL, inputThreadRoutine,(void *)(tid));
+
+	tid = (int *)malloc(sizeof(int));
+	if (!tid){
+		return 1;
+	}
+	*tid = WORKER_THREAD_NUM + 2;
+	pthread_create(&send_thread, NULL, sendThreadRoutine,(void *)(tid));
+  
+  synch_printf("Init complete!\n");
 	while(1)
     {
         synch_printf("accepting connection\n");

@@ -70,9 +70,32 @@ int extendable_string_add_string(extendable_string_t *str_struct, const char *st
 	str_struct->index+=strlength;	
 };
 
+int extendable_string_delete_partly(extendable_string_t *str_struct, long long start, long long end){
+  long long del_size = end+1 - start;
+	char *temp;
+  long long i;
+  if(!(temp = (char*)malloc((str_struct->size - del_size)*sizeof(char)))){  
+		return 1;
+	}
+  if (end < start) {
+    return 1;
+  }
+  for(i = 0ll; i < start; ++i) {
+    temp[i] = str_struct->array[i];
+  }
+  for(i = end+1; i <= str_struct->index; ++i) {
+    temp[i - del_size] = str_struct->array[i];
+  }
+	free(str_struct->array);
+	str_struct->array = temp;
+  str_struct->index -= del_size;	
+  memset((void *)(str_struct->array+str_struct->index), 0, str_struct->size - str_struct->index);	
+
+}
+
 const char *extendable_string_get_string(extendable_string_t *str_struct){
 	return str_struct->array;
-};
+}
 
 int extendable_string_get_element(extendable_string_t *str_struct, long long index, char *element){
 	if (str_struct->index > index){

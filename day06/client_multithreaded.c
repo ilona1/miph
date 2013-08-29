@@ -26,7 +26,7 @@ static int sock_fd = 0;
 int check_parameters_count(int argc){
 	if(argc != 2)
     {
-        printf("\n Usage: cliemt <server address> [<server port>] \n");
+        printf("\n Usage: client <server address> [<server port>] \n");
         return 1;
     }
 	return 0;
@@ -113,7 +113,7 @@ void *receiveThreadRoutine(void *threadid)
 
 int main(int argc, char *argv[])
 {
-    int *tid;
+  int *tid;
 	int status;
 	int n, last_n, n_sum;
 	int n_size;
@@ -123,23 +123,22 @@ int main(int argc, char *argv[])
 	pthread_t receive_thread;
 	pthread_t input_thread;
 	
-    if (check_parameters_count(argc)){
+  if (check_parameters_count(argc)){
 		//error
 		return 1;
 	}
 
-    memset(receive_buffer, 0, sizeof(receive_buffer)); // clear receive buffer
-    memset(send_buffer[0], 0, sizeof(send_buffer[0]));
+  memset(receive_buffer, 0, sizeof(receive_buffer)); // clear receive buffer
+  memset(send_buffer[0], 0, sizeof(send_buffer[0]));
 	
 	pthread_mutex_init(&send_buffer_access, NULL);
 	pthread_cond_init (&send_buffer_0_cv, NULL);
 	pthread_cond_init (&send_buffer_1_cv, NULL);
 	
-	if((sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-    {
+	if((sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         printf("\n Error : Could not create socket \n");
         return 1;
-    } 
+  } 
 
 	if (argc > 2){ // check if port supplied
 		server_port = atoi(argv[2]);
@@ -149,11 +148,10 @@ int main(int argc, char *argv[])
 	printf("connecting %s %d\n", argv[1], server_port);
 	
 	// attempt to connect
-    if(connect(sock_fd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
-    {
+  if(connect(sock_fd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
        printf("\n Error : Connect Failed \n");
        return 1;
-    } 
+  } 
 	
 	init_synch_printing();
 	tid = (int *)malloc(sizeof(int));

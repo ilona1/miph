@@ -42,14 +42,15 @@ int main(int argc, char *argv[])
 	
 	listen(socket_fd, 10); 
 	printf("listening\n");
- 	while(1)
+ 
+  int f = open("destfile.txt", O_CREAT | O_WRONLY, (S_IWUSR | S_IRUSR | S_IWOTH | S_IROTH));
+  fchmod(f, (S_IRWXU | S_IRWXG | S_IROTH | S_IWOTH));
+
+	while(1)
     {
         printf("accepting connection\n");
 		conn_fd = accept(socket_fd, (struct sockaddr*)NULL, NULL); 
 		
-    int f = open("destfile.txt", (O_CREAT | O_TRUNC | O_WRONLY), S_IWUSR);
-    fchmod (f, (S_IWUSR | S_IRUSR | S_IWOTH | S_IROTH));
-
 		printf("writing\n");
 		snprintf(send_buffer, sizeof(send_buffer), "server says hello world!\n");
         write(conn_fd, send_buffer, strlen(send_buffer)); 
